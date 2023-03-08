@@ -1,0 +1,63 @@
+version: '3'
+services:
+
+  #PHP Service
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: digitalocean.com/php
+    container_name: app
+    volumes:
+        - ./:/var/www
+        - .docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
+    restart: unless-stopped
+    tty: true
+    environment:
+      SERVICE_NAME: app
+      SERVICE_TAGS: dev
+    working_dir: /var/www
+    networks:
+      - app-network
+
+  #Nginx Service
+  laravel_api_example_nginx:
+    image: nginx:alpine
+    container_name: laravel_api_example_nginx
+    volumes:
+        - ./:/var/www
+        - .docker/nginx/conf.d/:/etc/nginx/conf.d/
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - app-network
+
+  #MySQL Service
+  laravel_api_example_db:
+    image: mysql:8.0.32
+    container_name: laravel_api_example_db
+    volumes:
+        - laravel-api-example-db-volume:/var/lib/mysql
+        - .docker/mysql/my.cnf:/etc/mysql/my.cnf
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: laravel_api_example
+      MYSQL_ROOT_PASSWORD: mysecretpassword
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysql
+    networks:
+      - app-network
+
+volumes:
+    laravel-api-example-db-volume:
+
+#Docker Networks
+networks:
+  app-network:
+    driver: bridge
